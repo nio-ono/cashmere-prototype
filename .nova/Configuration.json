@@ -1,5 +1,7 @@
 {
   "workspace.art_style" : 0,
   "workspace.color" : 14,
-  "workspace.name" : "Cashmere Animation"
+  "workspace.name" : "Cashmere Animation",
+  "workspace.preview_type" : "custom",
+  "workspace.preview_url" : "http:\/\/localhost:1234\/"
 }

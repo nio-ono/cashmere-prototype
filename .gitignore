@@ -1,0 +1,4 @@
+.nova/
+.cache/
+node_modules/
+dist/
