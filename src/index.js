@@ -1,20 +1,67 @@
 import * as THREE from 'three';
-// import * as Noise from 'three-noise';
-// console.log(Noise);
+import * as dat from 'dat.gui';
 
-// === GLOBAL PARAMETERS ===
+// === PRESETS ===
 
-const cameraZPosition = 50;
-const gridSpacing = .5;
-const dotBaseSize = .5;
-const waveSpeed = 2;
-const waveIntensity = 1; // The contrast between the smallest and largest dots
-const waveAmplitude = .5; // The magnitude of the waves at the high end (makes the big dots bigger)
-const waveFrequency = .51;  // The scale of the noise overall (How zoomed in you are)
-const octaveCount = 4; // Number of octaves
-const persistence = .05; // Amount by which each octave contributes less than the previous one
-const windDirection = new THREE.Vector2(0.5, 0.5);
-const windIntensity = 0.01;
+const presets = {
+    default: {
+        cameraZPosition: 50,
+        gridSpacing: .5,
+        dotBaseSize: .5,
+        waveSpeed: 2,
+        waveIntensity: 1,
+        waveAmplitude: .5,
+        waveFrequency: .51,
+        octaveCount: 4,
+        persistence: .05,
+        windDirection: new THREE.Vector2(0.5, 0.5),
+        windIntensity: 0.01,
+    }
+};
+
+// === ACTIVE PARAMETERS ===
+
+const params = presets.default;
+
+const gui = new dat.GUI();
+gui.add(params, 'cameraZPosition', 10, 100).onChange((value) => {
+    camera.position.z = value;
+});
+gui.add(params, 'gridSpacing', 0.1, 5).onChange(createAndUpdateGrid);
+gui.add(params, 'dotBaseSize', 0.1, 2).onChange((value) => {
+    shaderMaterial.uniforms.dotBaseSize.value = value;
+});
+gui.add(params, 'waveSpeed', 0, 10);
+gui.add(params, 'waveIntensity', 0, 5).onChange((value) => {
+    shaderMaterial.uniforms.waveIntensity.value = value;
+});
+gui.add(params, 'waveAmplitude', 0, 2).onChange((value) => {
+    shaderMaterial.uniforms.waveAmplitude.value = value;
+});
+gui.add(params, 'waveFrequency', 0, 2).onChange((value) => {
+    shaderMaterial.uniforms.waveFrequency.value = value;
+});
+gui.add(params, 'octaveCount', 1, 8).step(1).onChange((value) => {
+    shaderMaterial.uniforms.octaveCount.value = value;
+});
+gui.add(params, 'persistence', 0, 1).onChange((value) => {
+    shaderMaterial.uniforms.persistence.value = value;
+});
+gui.add(params.windDirection, 'x', -1, 1).name('Wind Dir X').onChange(updateWindDirection);
+gui.add(params.windDirection, 'y', -1, 1).name('Wind Dir Y').onChange(updateWindDirection);
+gui.add(params, 'windIntensity', 0, 0.1).onChange((value) => {
+    shaderMaterial.uniforms.windIntensity.value = value;
+});
+
+function createAndUpdateGrid(value) {
+    geometry.setAttribute('position', createGrid());
+    gridRows = Math.floor(window.innerWidth / params.gridSpacing);
+    gridCols = Math.floor(window.innerHeight / params.gridSpacing);
+}
+
+function updateWindDirection() {
+    shaderMaterial.uniforms.windDirection.value = params.windDirection;
+}
 
 const vertices = [];
 
@@ -23,21 +70,21 @@ const vertices = [];
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 
-camera.position.z = cameraZPosition;
+camera.position.z = params.cameraZPosition;
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-let gridRows = Math.floor(window.innerWidth / gridSpacing);
-let gridCols = Math.floor(window.innerHeight / gridSpacing);
+let gridRows = Math.floor(window.innerWidth / params.gridSpacing);
+let gridCols = Math.floor(window.innerHeight / params.gridSpacing);
 
 function createGrid() {
     vertices.length = 0;
-    const halfWidth = (gridRows * gridSpacing) / 2;
-    const halfHeight = (gridCols * gridSpacing) / 2;
-    for (let i = -halfWidth; i <= halfWidth; i += gridSpacing) {
-        for (let j = -halfHeight; j <= halfHeight; j += gridSpacing) {
+    const halfWidth = (gridRows * params.gridSpacing) / 2;
+    const halfHeight = (gridCols * params.gridSpacing) / 2;
+    for (let i = -halfWidth; i <= halfWidth; i += params.gridSpacing) {
+        for (let j = -halfHeight; j <= halfHeight; j += params.gridSpacing) {
             vertices.push(i, j, 0);
         }
     }
@@ -56,19 +103,18 @@ const rtTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHei
 const shaderMaterial = new THREE.ShaderMaterial({
     uniforms: {
         time: { value: 0 },
-        dotBaseSize: { value: dotBaseSize },
-        waveIntensity: { value: waveIntensity },
-        waveSpeed: { value: waveSpeed },
-        waveFrequency: { value: waveFrequency },
-        waveAmplitude: { value: waveAmplitude },
-        octaveCount: { value: octaveCount }, 
-        persistence: { value: persistence },
+        dotBaseSize: { value: params.dotBaseSize },
+        waveIntensity: { value: params.waveIntensity },
+        waveSpeed: { value: params.waveSpeed },
+        waveFrequency: { value: params.waveFrequency },
+        waveAmplitude: { value: params.waveAmplitude },
+        octaveCount: { value: params.octaveCount },
+        persistence: { value: params.persistence },
         screenWidth: { value: window.innerWidth },
         screenHeight: { value: window.innerHeight },
         previousFrame: { value: rtTexture.texture },
-        windDirection: { value: windDirection },  // example direction
-        windIntensity: { value: windIntensity },  // example intensity
-
+        windDirection: { value: params.windDirection },
+        windIntensity: { value: params.windIntensity },
     },
     vertexShader: `
         uniform float screenWidth;
@@ -164,7 +210,7 @@ const particles = new THREE.Points(geometry, shaderMaterial);
 scene.add(particles);
 
 function animate() {
-    shaderMaterial.uniforms.time.value += waveSpeed;
+    shaderMaterial.uniforms.time.value += params.waveSpeed;
     requestAnimationFrame(animate);
     renderer.render(scene, camera, rtTexture);  // Render to the target
     renderer.render(scene, camera);  // Render to the screen
@@ -179,8 +225,8 @@ window.addEventListener('resize', () => {
     camera.aspect = newWidth / newHeight;
     camera.updateProjectionMatrix();
 
-    gridRows = Math.floor(newWidth / gridSpacing);
-    gridCols = Math.floor(newHeight / gridSpacing);
+    gridRows = Math.floor(newWidth / params.gridSpacing);
+    gridCols = Math.floor(newHeight / params.gridSpacing);
 
     geometry.setAttribute('position', createGrid());
     shaderMaterial.uniforms.screenWidth.value = window.innerWidth;
