@@ -3,9 +3,9 @@ import * as THREE from 'three';
 // === GLOBAL PARAMETERS ===
 
 const cameraZPosition = 50;
-const gridSpacing = 10;
-const dotBaseSize = 0.1;
-const waveSpeed = .5;
+const gridSpacing = 1.0;
+const dotBaseSize = .5;
+const waveSpeed = .125;
 const waveIntensity = .5;
 
 const vertices = [];
@@ -39,16 +39,20 @@ geometry.setAttribute('position', createGrid());
 const shaderMaterial = new THREE.ShaderMaterial({
     uniforms: {
         time: { value: 0 },
-        pointSize: { value: 10.0 }
+        dotBaseSize: { value: dotBaseSize },
+        waveIntensity: { value: waveIntensity }
     },
     vertexShader: `
         precision highp float;
-        uniform float time;
-        in float scale;
         
+        uniform float time;
+        uniform float dotBaseSize;
+        uniform float waveIntensity;
+    
         void main() {
             vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
-            gl_PointSize = 5.0;
+            float wave = sin(position.x + time) * waveIntensity; // Only use the x coordinate for the wave
+            gl_PointSize = clamp(dotBaseSize * (300.0 / -mvPosition.z) * (1.0 + wave), 1.0, 100.0);
             gl_Position = projectionMatrix * mvPosition;
         }
     `,
@@ -56,7 +60,7 @@ const shaderMaterial = new THREE.ShaderMaterial({
         precision highp float;
         
         void main() {
-            gl_FragColor = vec4( 1.0, 1.0, 1.0, 1.0 );
+            gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
         }
     `,
     transparent: true,
@@ -66,21 +70,8 @@ const shaderMaterial = new THREE.ShaderMaterial({
 const particles = new THREE.Points(geometry, shaderMaterial);
 scene.add(particles);
 
-let time = 0;
-const scales = new Float32Array(gridRows * gridCols).fill(5.0);
-geometry.setAttribute('scale', new THREE.BufferAttribute(scales, 1));
-
 function animate() {
-    time += waveSpeed;
-
-    for (let i = 0, j = 0; i < scales.length; i++, j += 3) {
-        const x = vertices[j];
-        const y = vertices[j + 1];
-    }
-    
-    particles.geometry.attributes.scale.needsUpdate = true;
-    shaderMaterial.uniforms.time.value = time;
-
+    shaderMaterial.uniforms.time.value += waveSpeed;
     requestAnimationFrame(animate);
     renderer.render(scene, camera);
 }
@@ -97,7 +88,6 @@ window.addEventListener('resize', () => {
     gridCols = Math.floor(newHeight / gridSpacing);
 
     geometry.setAttribute('position', createGrid());
-    geometry.attributes.scale.array = new Float32Array(gridRows * gridCols).fill(1);
 });
 
 animate();
