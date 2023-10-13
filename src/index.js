@@ -6,12 +6,12 @@ import * as dat from 'dat.gui';
 const presets = {
     default: {
         cameraZPosition: 50,
-        gridSpacing: .5,
-        dotBaseSize: .5,
+        gridSpacing: .7,
+        dotBaseSize: .1,
         waveSpeed: 2,
-        waveIntensity: 1,
+        waveIntensity: .9,
         waveAmplitude: .5,
-        waveFrequency: .51,
+        waveFrequency: 1.17,
         octaveCount: 4,
         persistence: .05,
         windDirection: new THREE.Vector2(0.5, 0.5),
@@ -129,77 +129,73 @@ const shaderMaterial = new THREE.ShaderMaterial({
         uniform float persistence;
         uniform vec2 windDirection;
         uniform float windIntensity;
-
+        
         const float PI = 3.1415926535897932384626433832795;
-
-        // Simplex 2D noise
-        //
+        
         vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
         
-        float snoise(vec2 v){
-          const vec4 C = vec4(0.211324865405187, 0.366025403784439,
+        float snoise(vec2 v) {
+            const vec4 C = vec4(0.211324865405187, 0.366025403784439,
                    -0.577350269189626, 0.024390243902439);
-          vec2 i  = floor(v + dot(v, C.yy) );
-          vec2 x0 = v -   i + dot(i, C.xx);
-          vec2 i1;
-          i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
-          vec4 x12 = x0.xyxy + C.xxzz;
-          x12.xy -= i1;
-          i = mod(i, 289.0);
-          vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 ))
-          + i.x + vec3(0.0, i1.x, 1.0 ));
-          vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy),
+            vec2 i  = floor(v + dot(v, C.yy) );
+            vec2 x0 = v -   i + dot(i, C.xx);
+            vec2 i1;
+            i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+            vec4 x12 = x0.xyxy + C.xxzz;
+            x12.xy -= i1;
+            i = mod(i, 289.0);
+            vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 ))
+            + i.x + vec3(0.0, i1.x, 1.0 ));
+            vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy),
             dot(x12.zw,x12.zw)), 0.0);
-          m = m*m ;
-          m = m*m ;
-          vec3 x = 2.0 * fract(p * C.www) - 1.0;
-          vec3 h = abs(x) - 0.5;
-          vec3 ox = floor(x + 0.5);
-          vec3 a0 = x - ox;
-          m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
-          vec3 g;
-          g.x  = a0.x  * x0.x  + h.x  * x0.y;
-          g.yz = a0.yz * x12.xz + h.yz * x12.yw;
-          return 130.0 * dot(m, g);
+            m = m*m ;
+            m = m*m ;
+            vec3 x = 2.0 * fract(p * C.www) - 1.0;
+            vec3 h = abs(x) - 0.5;
+            vec3 ox = floor(x + 0.5);
+            vec3 a0 = x - ox;
+            m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
+            vec3 g;
+            g.x  = a0.x  * x0.x  + h.x  * x0.y;
+            g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+            return 130.0 * dot(m, g);
         }
         
-        precision highp float;
-        
-        float layeredNoise(vec2 pos) {
-            float total = 0.0;
+        float turbulentNoise(vec2 pos) {
+            float value = 0.0;
             float amplitude = waveAmplitude;
             float frequency = waveFrequency;
+            float baseFrequency = 0.05;
             for(int i = 0; i < int(octaveCount); i++) {
-                total += snoise(pos * frequency + time * 0.01) * amplitude;
-                frequency *= 2.0;
+                value += abs(snoise(pos * frequency + baseFrequency + time * 0.01)) * amplitude;
+                frequency *= 2.2;
                 amplitude *= persistence;
             }
-            return total;
+            return value;
+        }
+        
+        float postProcess(float value) {
+            return pow(value, 0.8); // This is where the value is post-processed.
         }
         
         float layeredNoiseWithWind(vec2 pos) {
-            vec2 windPos = pos + windDirection * windIntensity * time;
-            float windEffect = snoise(windPos);
-            return layeredNoise(pos) + windEffect;
+            vec2 windEffectPos = pos + windDirection * windIntensity * time * turbulentNoise(pos);
+            float currentNoise = turbulentNoise(pos);
+            float shiftedNoise = turbulentNoise(pos + vec2(0.1, 0.1) * currentNoise);
+            float combinedNoise = mix(currentNoise, shiftedNoise, 0.5);
+            return postProcess(combinedNoise + windEffectPos.y);
         }
-    
+        
         void main() {
             vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
             float wave = layeredNoiseWithWind(mvPosition.xy * 0.5) * waveIntensity;
-            gl_PointSize = clamp(dotBaseSize * (300.0 / -mvPosition.z) * (1.0 + wave), 1.0, 100.0);
+            gl_PointSize = clamp(dotBaseSize * (300.0 / -mvPosition.z) * (1.0 + wave * 1.5), 1.0, 100.0);
             gl_Position = projectionMatrix * mvPosition;
         }
     `,
     fragmentShader: `
-        precision highp float;
-        uniform sampler2D previousFrame;
-        uniform float screenWidth;
-        uniform float screenHeight;
-
-        
         void main() {
-            vec4 lastFrameColor = texture2D(previousFrame, gl_FragCoord.xy / vec2(screenWidth, screenHeight));
-            gl_FragColor = vec4(1.0);  // Set this for a white color, remove mix function
+            gl_FragColor = vec4(1.0);
         }
     `,
     transparent: true,
