@@ -5,10 +5,16 @@ import * as THREE from 'three';
 // === GLOBAL PARAMETERS ===
 
 const cameraZPosition = 50;
-const gridSpacing = 1.0;
-const dotBaseSize = .25;
-const waveSpeed = 1;
-const waveIntensity = 2;
+const gridSpacing = .5;
+const dotBaseSize = .5;
+const waveSpeed = 2;
+const waveIntensity = 1; // The contrast between the smallest and largest dots
+const waveAmplitude = .5; // The magnitude of the waves at the high end (makes the big dots bigger)
+const waveFrequency = .51;  // The scale of the noise overall (How zoomed in you are)
+const octaveCount = 4; // Number of octaves
+const persistence = .05; // Amount by which each octave contributes less than the previous one
+const windDirection = new THREE.Vector2(0.5, 0.5);
+const windIntensity = 0.01;
 
 const vertices = [];
 
@@ -41,16 +47,43 @@ function createGrid() {
 const geometry = new THREE.BufferGeometry();
 geometry.setAttribute('position', createGrid());
 
+const rtTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, {
+    minFilter: THREE.LinearFilter,
+    magFilter: THREE.NearestFilter,
+    format: THREE.RGBAFormat
+});
+
 const shaderMaterial = new THREE.ShaderMaterial({
     uniforms: {
         time: { value: 0 },
         dotBaseSize: { value: dotBaseSize },
         waveIntensity: { value: waveIntensity },
         waveSpeed: { value: waveSpeed },
-        screenWidth: { value: window.innerWidth }
+        waveFrequency: { value: waveFrequency },
+        waveAmplitude: { value: waveAmplitude },
+        octaveCount: { value: octaveCount }, 
+        persistence: { value: persistence },
+        screenWidth: { value: window.innerWidth },
+        screenHeight: { value: window.innerHeight },
+        previousFrame: { value: rtTexture.texture },
+        windDirection: { value: windDirection },  // example direction
+        windIntensity: { value: windIntensity },  // example intensity
+
     },
     vertexShader: `
         uniform float screenWidth;
+        uniform float screenHeight;
+        uniform float time;
+        uniform float dotBaseSize;
+        uniform float waveIntensity;
+        uniform float waveSpeed;
+        uniform float waveFrequency;
+        uniform float waveAmplitude;
+        uniform float octaveCount;
+        uniform float persistence;
+        uniform vec2 windDirection;
+        uniform float windIntensity;
+
         const float PI = 3.1415926535897932384626433832795;
 
         // Simplex 2D noise
@@ -86,27 +119,41 @@ const shaderMaterial = new THREE.ShaderMaterial({
         
         precision highp float;
         
-        uniform float time;
-        uniform float dotBaseSize;
-        uniform float waveIntensity;
-        uniform float waveSpeed;
+        float layeredNoise(vec2 pos) {
+            float total = 0.0;
+            float amplitude = waveAmplitude;
+            float frequency = waveFrequency;
+            for(int i = 0; i < int(octaveCount); i++) {
+                total += snoise(pos * frequency + time * 0.01) * amplitude;
+                frequency *= 2.0;
+                amplitude *= persistence;
+            }
+            return total;
+        }
         
-        float noise(vec2 pos) {
-            return snoise(pos);
+        float layeredNoiseWithWind(vec2 pos) {
+            vec2 windPos = pos + windDirection * windIntensity * time;
+            float windEffect = snoise(windPos);
+            return layeredNoise(pos) + windEffect;
         }
     
         void main() {
             vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
-            float wave = snoise(mvPosition.xy + time * 0.01) * waveIntensity;
+            float wave = layeredNoiseWithWind(mvPosition.xy * 0.5) * waveIntensity;
             gl_PointSize = clamp(dotBaseSize * (300.0 / -mvPosition.z) * (1.0 + wave), 1.0, 100.0);
             gl_Position = projectionMatrix * mvPosition;
         }
     `,
     fragmentShader: `
         precision highp float;
+        uniform sampler2D previousFrame;
+        uniform float screenWidth;
+        uniform float screenHeight;
+
         
         void main() {
-            gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+            vec4 lastFrameColor = texture2D(previousFrame, gl_FragCoord.xy / vec2(screenWidth, screenHeight));
+            gl_FragColor = vec4(1.0);  // Set this for a white color, remove mix function
         }
     `,
     transparent: true,
@@ -119,7 +166,9 @@ scene.add(particles);
 function animate() {
     shaderMaterial.uniforms.time.value += waveSpeed;
     requestAnimationFrame(animate);
-    renderer.render(scene, camera);
+    renderer.render(scene, camera, rtTexture);  // Render to the target
+    renderer.render(scene, camera);  // Render to the screen
+
 }
 
 window.addEventListener('resize', () => {
@@ -135,6 +184,7 @@ window.addEventListener('resize', () => {
 
     geometry.setAttribute('position', createGrid());
     shaderMaterial.uniforms.screenWidth.value = window.innerWidth;
+    shaderMaterial.uniforms.screenHeight.value = window.innerHeight;
 
 });
 
