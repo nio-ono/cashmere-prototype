@@ -4,11 +4,11 @@ import * as dat from 'dat.gui';
 // GUI Configuration
 const GUIConfiguration = {
     camera: {
-        cameraZPosition: { min: 10, max: 100, default: 50 }
+        cameraZPosition: { min: 10, max: 200, default: 100 }
     },
     grid: {
         gridSpacing: { min: 0.1, max: 5, default: 1 },
-        minDotSize: { min: 0.1, max: 2, default: .5 },
+        minDotSize: { min: 0.1, max: 2, default: 1 },
         maxDotSize: { min: 0.1, max: 20, default: 5 }
     },
     waveMovement: {
@@ -17,7 +17,6 @@ const GUIConfiguration = {
         angle: { min: 0, max: 360, default: 20 },
     },
     waveGeometry: {
-        steepness: { min: 0.5, max: 1, default: 1 }, // Adjusted min and default value
         convexity: { min: 0, max: 1, default: .5 },
     }
 };
@@ -90,9 +89,6 @@ guiCreator.setCallback('angle', (value) => {
 guiCreator.setCallback('waveWidth', (value) => {
     shaderMaterial.uniforms.waveWidth.value = value;
 });
-guiCreator.setCallback('steepness', (value) => {
-    shaderMaterial.uniforms.steepness.value = value;
-});
 guiCreator.setCallback('convexity', (value) => {
     shaderMaterial.uniforms.convexity.value = value;
 });
@@ -141,7 +137,6 @@ const shaderMaterial = new THREE.ShaderMaterial({
         speed: { value: params.speed },
         frequency: { value: params.frequency },
         angle: { value: THREE.MathUtils.degToRad(params.angle) },
-        steepness: { value: params.steepness },
         convexity: { value: params.convexity },
     },
     vertexShader: `
@@ -151,7 +146,6 @@ const shaderMaterial = new THREE.ShaderMaterial({
         uniform float speed;
         uniform float frequency;
         uniform float angle;
-        uniform float steepness;
         uniform float convexity;
     
         void main() {
@@ -159,21 +153,21 @@ const shaderMaterial = new THREE.ShaderMaterial({
         
             float pi = 3.14159265359;
             float adjustedX = mvPosition.x * cos(angle) - mvPosition.y * sin(angle);
-            float x = mod(adjustedX * frequency - time * speed, 2.0 * pi) / (2.0 * pi);  // Corrected wave direction
-            
-            float wave = 0.0;
-    
-            if (x < steepness) {
-                wave = x / steepness; 
-            } else {
-                float trailing = (x - steepness) / (1.0 - steepness);
-                wave = 1.0 - pow(trailing, 2.0 / (1.0 - convexity));
+            float x = mod(adjustedX * frequency - time * speed, 2.0 * pi) / (2.0 * pi);
+        
+            float wave;
+            float curvePower = 2.0 + 8.0 * convexity;
+            wave = pow(x, curvePower);
+        
+            if (x > 0.99) { // Very close to the end
+                wave = 0.0;  // sharp drop
             }
-            
+        
             float size = mix(minDotSize, maxDotSize, wave);
             gl_PointSize = size;
             gl_Position = projectionMatrix * mvPosition;
         }
+
     `,
     fragmentShader: `
         void main() {
