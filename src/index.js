@@ -1,23 +1,30 @@
 import * as THREE from 'three';
 import * as dat from 'dat.gui';
 
-// 1. GUI Configuration
+// GUI Configuration
 const GUIConfiguration = {
     camera: {
         cameraZPosition: { min: 10, max: 100, default: 50 }
     },
     grid: {
-        gridSpacing: { min: 0.1, max: 5, default: 1 },
-        minDotSize: { min: 0.1, max: 2, default: 1 },
-        maxDotSize: { min: 0.1, max: 20, default: 5 }
+        gridSpacing: { min: 0.1, max: 5, default: .5 },
+        minDotSize: { min: 0.1, max: 2, default: .5 },
+        maxDotSize: { min: 0.1, max: 20, default: 6 }
     },
     waveMovement: {
         speed: { min: 0, max: 10, default: 2 },
         frequency: { min: 0, max: 2, default: .5 }
+    },
+    waveGeometry: {
+        waveWidth: { min: 0.1, max: 10, default: 1 },
+        steepness: { min: 0.1, max: 5, default: 2 },
+        peakSoftness: { min: 0.1, max: 2, default: 1 },
+        troughSoftness: { min: 0.1, max: 2, default: 1 },
+        trailingConvexity: { min: 0.1, max: 10, default: 1 }
     }
 };
 
-// 2. Presets
+// Presets
 const presets = {
     default: {}
 };
@@ -79,6 +86,21 @@ guiCreator.setCallback('speed', (value) => {
 guiCreator.setCallback('frequency', (value) => {
     shaderMaterial.uniforms.frequency.value = value;
 });
+guiCreator.setCallback('waveWidth', (value) => {
+    shaderMaterial.uniforms.waveWidth.value = value;
+});
+guiCreator.setCallback('steepness', (value) => {
+    shaderMaterial.uniforms.steepness.value = value;
+});
+guiCreator.setCallback('peakSoftness', (value) => {
+    shaderMaterial.uniforms.peakSoftness.value = value;
+});
+guiCreator.setCallback('troughSoftness', (value) => {
+    shaderMaterial.uniforms.troughSoftness.value = value;
+});
+guiCreator.setCallback('trailingConvexity', (value) => {
+    shaderMaterial.uniforms.trailingConvexity.value = value;
+});
 
 function createAndUpdateGrid(value) {
     geometry.setAttribute('position', createGrid());
@@ -121,7 +143,12 @@ const shaderMaterial = new THREE.ShaderMaterial({
         minDotSize: { value: params.minDotSize },
         maxDotSize: { value: params.maxDotSize },
         speed: { value: params.speed },
-        frequency: { value: params.frequency }
+        frequency: { value: params.frequency },
+        waveWidth: { value: params.waveWidth },
+        steepness: { value: params.steepness },
+        peakSoftness: { value: params.peakSoftness },
+        troughSoftness: { value: params.troughSoftness },
+        trailingConvexity: { value: params.trailingConvexity }
     },
     vertexShader: `
         uniform float time;
@@ -129,15 +156,35 @@ const shaderMaterial = new THREE.ShaderMaterial({
         uniform float maxDotSize;
         uniform float speed;
         uniform float frequency;
+        uniform float waveWidth;
+        uniform float steepness;
+        uniform float peakSoftness;
+        uniform float troughSoftness;
+        uniform float trailingConvexity;
 
         void main() {
-            vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
-            float wave = 0.5 * sin(mvPosition.x * frequency + time * speed) + 0.5; // Ranges from 0 to 1
+            vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+        
+            float pi = 3.14159265359;
+            float x = mod(mvPosition.x * frequency + time * speed, 2.0 * pi) / (2.0 * pi) * waveWidth;
+        
+            float wave = 0.0;
+        
+            if(x < steepness) {
+                wave = x / steepness;
+            } else if(x < steepness + peakSoftness) {
+                wave = 1.0 - (x - steepness) / peakSoftness;
+            } else {
+                wave = 1.0 - (x - steepness - peakSoftness) / (waveWidth - steepness - peakSoftness);
+            }
+        
+            wave = mix(0.5, 1.0, wave); // Map to [0.5, 1.0] range
+        
             float size = mix(minDotSize, maxDotSize, wave);
+        
             gl_PointSize = size;
             gl_Position = projectionMatrix * mvPosition;
         }
-
     `,
     fragmentShader: `
         void main() {
