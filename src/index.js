@@ -7,20 +7,19 @@ const GUIConfiguration = {
         cameraZPosition: { min: 10, max: 100, default: 50 }
     },
     grid: {
-        gridSpacing: { min: 0.1, max: 5, default: .5 },
+        gridSpacing: { min: 0.1, max: 5, default: 1 },
         minDotSize: { min: 0.1, max: 2, default: .5 },
-        maxDotSize: { min: 0.1, max: 20, default: 4 }
+        maxDotSize: { min: 0.1, max: 20, default: 5 }
     },
     waveMovement: {
-        speed: { min: 0, max: 10, default: 2 },
-        frequency: { min: 0, max: 2, default: .5 }
+        speed: { min: 0, max: 10, default: 1 },
+        frequency: { min: 0, max: 2, default: .125 },
+        angle: { min: 0, max: 360, default: 20 },
     },
     waveGeometry: {
-        waveWidth: { min: 0.1, max: 10, default: 1 },
-        steepness: { min: 0.1, max: 5, default: 2 },
-        peakSoftness: { min: 0.1, max: 2, default: 1 },
-        troughSoftness: { min: 0.1, max: 2, default: 1 },
-        trailingConvexity: { min: 0.1, max: 10, default: 1 }
+        steepness: { min: 0.5, max: 1, default: 1 }, // Adjusted min and default value
+        softness: { min: 0.1, max: 2, default: 1 },
+        trailingConvexity: { min: -1, max: 1, default: 0 },
     }
 };
 
@@ -86,21 +85,22 @@ guiCreator.setCallback('speed', (value) => {
 guiCreator.setCallback('frequency', (value) => {
     shaderMaterial.uniforms.frequency.value = value;
 });
+guiCreator.setCallback('angle', (value) => {
+    shaderMaterial.uniforms.angle.value = THREE.MathUtils.degToRad(value);
+});
 guiCreator.setCallback('waveWidth', (value) => {
     shaderMaterial.uniforms.waveWidth.value = value;
 });
 guiCreator.setCallback('steepness', (value) => {
     shaderMaterial.uniforms.steepness.value = value;
 });
-guiCreator.setCallback('peakSoftness', (value) => {
-    shaderMaterial.uniforms.peakSoftness.value = value;
-});
-guiCreator.setCallback('troughSoftness', (value) => {
-    shaderMaterial.uniforms.troughSoftness.value = value;
+guiCreator.setCallback('softness', (value) => {
+    shaderMaterial.uniforms.softness.value = value;
 });
 guiCreator.setCallback('trailingConvexity', (value) => {
     shaderMaterial.uniforms.trailingConvexity.value = value;
 });
+
 
 function createAndUpdateGrid(value) {
     geometry.setAttribute('position', createGrid());
@@ -144,11 +144,10 @@ const shaderMaterial = new THREE.ShaderMaterial({
         maxDotSize: { value: params.maxDotSize },
         speed: { value: params.speed },
         frequency: { value: params.frequency },
-        waveWidth: { value: params.waveWidth },
+        angle: { value: THREE.MathUtils.degToRad(params.angle) },
         steepness: { value: params.steepness },
-        peakSoftness: { value: params.peakSoftness },
-        troughSoftness: { value: params.troughSoftness },
-        trailingConvexity: { value: params.trailingConvexity }
+        softness: { value: params.softness },
+        trailingConvexity: { value: params.trailingConvexity },
     },
     vertexShader: `
         uniform float time;
@@ -156,32 +155,31 @@ const shaderMaterial = new THREE.ShaderMaterial({
         uniform float maxDotSize;
         uniform float speed;
         uniform float frequency;
-        uniform float waveWidth;
+        uniform float angle;
         uniform float steepness;
-        uniform float peakSoftness;
-        uniform float troughSoftness;
+        uniform float softness;
         uniform float trailingConvexity;
-
+    
         void main() {
             vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
         
             float pi = 3.14159265359;
-            float x = mod(mvPosition.x * frequency + time * speed, 2.0 * pi) / (2.0 * pi) * waveWidth;
-        
+            float adjustedX = mvPosition.x * cos(angle) - mvPosition.y * sin(angle);
+            float x = mod(adjustedX * frequency - time * speed, 2.0 * pi) / (2.0 * pi);  // Corrected wave direction
+            
             float wave = 0.0;
-        
-            if(x < steepness) {
-                wave = x / steepness;
-            } else if(x < steepness + peakSoftness) {
-                wave = 1.0 - (x - steepness) / peakSoftness;
+    
+            if (x < steepness) {
+                wave = pow(x / steepness, softness); 
             } else {
-                wave = 1.0 - (x - steepness - peakSoftness) / (waveWidth - steepness - peakSoftness);
+                float convexValue = pow((1.0 - x) / (1.0 - steepness), 2.0 + trailingConvexity);
+                wave = 1.0 - convexValue;
             }
-        
-            wave = mix(0.5, 1.0, wave); // Map to [0.5, 1.0] range
-        
+    
+            wave = mix(0.5, 1.0, wave * softness);  // Applied softness to the overall wave function
+            
             float size = mix(minDotSize, maxDotSize, wave);
-        
+            
             gl_PointSize = size;
             gl_Position = projectionMatrix * mvPosition;
         }
