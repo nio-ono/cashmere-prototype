@@ -7,15 +7,10 @@ const presets = {
     default: {
         cameraZPosition: 50,
         gridSpacing: .5,
-        dotBaseSize: .5,
+        minDotSize: .5,
+        maxDotSize: 1.5,
         waveSpeed: 2,
-        waveIntensity: 1,
-        waveAmplitude: .5,
-        waveFrequency: .51,
-        octaveCount: 4,
-        persistence: .05,
-        windDirection: new THREE.Vector2(0.5, 0.5),
-        windIntensity: 0.01,
+        waveFrequency: .51
     }
 };
 
@@ -28,29 +23,17 @@ gui.add(params, 'cameraZPosition', 10, 100).onChange((value) => {
     camera.position.z = value;
 });
 gui.add(params, 'gridSpacing', 0.1, 5).onChange(createAndUpdateGrid);
-gui.add(params, 'dotBaseSize', 0.1, 2).onChange((value) => {
-    shaderMaterial.uniforms.dotBaseSize.value = value;
+gui.add(params, 'minDotSize', 0.1, 2).onChange((value) => {
+    shaderMaterial.uniforms.minDotSize.value = value;
 });
-gui.add(params, 'waveSpeed', 0, 10);
-gui.add(params, 'waveIntensity', 0, 5).onChange((value) => {
-    shaderMaterial.uniforms.waveIntensity.value = value;
+gui.add(params, 'maxDotSize', 0.1, 5).onChange((value) => {
+    shaderMaterial.uniforms.maxDotSize.value = value;
 });
-gui.add(params, 'waveAmplitude', 0, 2).onChange((value) => {
-    shaderMaterial.uniforms.waveAmplitude.value = value;
+gui.add(params, 'waveSpeed', 0, 10).onChange((value) => {
+    shaderMaterial.uniforms.waveSpeed.value = value;
 });
 gui.add(params, 'waveFrequency', 0, 2).onChange((value) => {
     shaderMaterial.uniforms.waveFrequency.value = value;
-});
-gui.add(params, 'octaveCount', 1, 8).step(1).onChange((value) => {
-    shaderMaterial.uniforms.octaveCount.value = value;
-});
-gui.add(params, 'persistence', 0, 1).onChange((value) => {
-    shaderMaterial.uniforms.persistence.value = value;
-});
-gui.add(params.windDirection, 'x', -1, 1).name('Wind Dir X').onChange(updateWindDirection);
-gui.add(params.windDirection, 'y', -1, 1).name('Wind Dir Y').onChange(updateWindDirection);
-gui.add(params, 'windIntensity', 0, 0.1).onChange((value) => {
-    shaderMaterial.uniforms.windIntensity.value = value;
 });
 
 function createAndUpdateGrid(value) {
@@ -59,13 +42,7 @@ function createAndUpdateGrid(value) {
     gridCols = Math.floor(window.innerHeight / params.gridSpacing);
 }
 
-function updateWindDirection() {
-    shaderMaterial.uniforms.windDirection.value = params.windDirection;
-}
-
 const vertices = [];
-
-// const noise = new Noise.Perlin();
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -94,112 +71,33 @@ function createGrid() {
 const geometry = new THREE.BufferGeometry();
 geometry.setAttribute('position', createGrid());
 
-const rtTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, {
-    minFilter: THREE.LinearFilter,
-    magFilter: THREE.NearestFilter,
-    format: THREE.RGBAFormat
-});
-
 const shaderMaterial = new THREE.ShaderMaterial({
     uniforms: {
         time: { value: 0 },
-        dotBaseSize: { value: params.dotBaseSize },
-        waveIntensity: { value: params.waveIntensity },
+        minDotSize: { value: params.minDotSize },
+        maxDotSize: { value: params.maxDotSize },
         waveSpeed: { value: params.waveSpeed },
-        waveFrequency: { value: params.waveFrequency },
-        waveAmplitude: { value: params.waveAmplitude },
-        octaveCount: { value: params.octaveCount },
-        persistence: { value: params.persistence },
-        screenWidth: { value: window.innerWidth },
-        screenHeight: { value: window.innerHeight },
-        previousFrame: { value: rtTexture.texture },
-        windDirection: { value: params.windDirection },
-        windIntensity: { value: params.windIntensity },
+        waveFrequency: { value: params.waveFrequency }
     },
     vertexShader: `
-        uniform float screenWidth;
-        uniform float screenHeight;
         uniform float time;
-        uniform float dotBaseSize;
-        uniform float waveIntensity;
+        uniform float minDotSize;
+        uniform float maxDotSize;
         uniform float waveSpeed;
         uniform float waveFrequency;
-        uniform float waveAmplitude;
-        uniform float octaveCount;
-        uniform float persistence;
-        uniform vec2 windDirection;
-        uniform float windIntensity;
 
-        const float PI = 3.1415926535897932384626433832795;
-
-        // Simplex 2D noise
-        //
-        vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
-        
-        float snoise(vec2 v){
-          const vec4 C = vec4(0.211324865405187, 0.366025403784439,
-                   -0.577350269189626, 0.024390243902439);
-          vec2 i  = floor(v + dot(v, C.yy) );
-          vec2 x0 = v -   i + dot(i, C.xx);
-          vec2 i1;
-          i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
-          vec4 x12 = x0.xyxy + C.xxzz;
-          x12.xy -= i1;
-          i = mod(i, 289.0);
-          vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 ))
-          + i.x + vec3(0.0, i1.x, 1.0 ));
-          vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy),
-            dot(x12.zw,x12.zw)), 0.0);
-          m = m*m ;
-          m = m*m ;
-          vec3 x = 2.0 * fract(p * C.www) - 1.0;
-          vec3 h = abs(x) - 0.5;
-          vec3 ox = floor(x + 0.5);
-          vec3 a0 = x - ox;
-          m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
-          vec3 g;
-          g.x  = a0.x  * x0.x  + h.x  * x0.y;
-          g.yz = a0.yz * x12.xz + h.yz * x12.yw;
-          return 130.0 * dot(m, g);
-        }
-        
-        precision highp float;
-        
-        float layeredNoise(vec2 pos) {
-            float total = 0.0;
-            float amplitude = waveAmplitude;
-            float frequency = waveFrequency;
-            for(int i = 0; i < int(octaveCount); i++) {
-                total += snoise(pos * frequency + time * 0.01) * amplitude;
-                frequency *= 2.0;
-                amplitude *= persistence;
-            }
-            return total;
-        }
-        
-        float layeredNoiseWithWind(vec2 pos) {
-            vec2 windPos = pos + windDirection * windIntensity * time;
-            float windEffect = snoise(windPos);
-            return layeredNoise(pos) + windEffect;
-        }
-    
         void main() {
             vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
-            float wave = layeredNoiseWithWind(mvPosition.xy * 0.5) * waveIntensity;
-            gl_PointSize = clamp(dotBaseSize * (300.0 / -mvPosition.z) * (1.0 + wave), 1.0, 100.0);
+            float wave = 0.5 * sin(mvPosition.x * waveFrequency + time * waveSpeed) + 0.5; // Ranges from 0 to 1
+            float size = mix(minDotSize, maxDotSize, wave);
+            gl_PointSize = size;
             gl_Position = projectionMatrix * mvPosition;
         }
+
     `,
     fragmentShader: `
-        precision highp float;
-        uniform sampler2D previousFrame;
-        uniform float screenWidth;
-        uniform float screenHeight;
-
-        
         void main() {
-            vec4 lastFrameColor = texture2D(previousFrame, gl_FragCoord.xy / vec2(screenWidth, screenHeight));
-            gl_FragColor = vec4(1.0);  // Set this for a white color, remove mix function
+            gl_FragColor = vec4(1.0); 
         }
     `,
     transparent: true,
@@ -210,11 +108,9 @@ const particles = new THREE.Points(geometry, shaderMaterial);
 scene.add(particles);
 
 function animate() {
-    shaderMaterial.uniforms.time.value += params.waveSpeed;
+    shaderMaterial.uniforms.time.value += params.waveSpeed * 0.01; // Smoother increase
     requestAnimationFrame(animate);
-    renderer.render(scene, camera, rtTexture);  // Render to the target
-    renderer.render(scene, camera);  // Render to the screen
-
+    renderer.render(scene, camera);
 }
 
 window.addEventListener('resize', () => {
@@ -229,9 +125,6 @@ window.addEventListener('resize', () => {
     gridCols = Math.floor(newHeight / params.gridSpacing);
 
     geometry.setAttribute('position', createGrid());
-    shaderMaterial.uniforms.screenWidth.value = window.innerWidth;
-    shaderMaterial.uniforms.screenHeight.value = window.innerHeight;
-
 });
 
 animate();
