@@ -9,7 +9,7 @@ const GUIConfiguration = {
     grid: {
         gridSpacing: { min: 0.1, max: 5, default: .5 },
         minDotSize: { min: 0.1, max: 2, default: .5 },
-        maxDotSize: { min: 0.1, max: 20, default: 6 }
+        maxDotSize: { min: 0.1, max: 20, default: 4 }
     },
     waveMovement: {
         speed: { min: 0, max: 10, default: 2 },
@@ -207,13 +207,16 @@ function animate() {
 window.addEventListener('resize', () => {
     const newWidth = window.innerWidth;
     const newHeight = window.innerHeight;
+    const aspectRatio = newWidth / newHeight;
 
     renderer.setSize(newWidth, newHeight);
-    camera.aspect = newWidth / newHeight;
+    camera.aspect = aspectRatio;
     camera.updateProjectionMatrix();
 
-    gridRows = Math.floor(newWidth / params.gridSpacing);
-    gridCols = Math.floor(newHeight / params.gridSpacing);
+    // Calculate gridCols based on the aspect ratio to maintain the same density
+    gridCols = Math.floor(gridRows / aspectRatio);
+
+    console.log("resize:" + gridRows + "," + gridCols);
 
     geometry.setAttribute('position', createGrid());
 });
