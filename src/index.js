@@ -10,12 +10,12 @@ const presets = {
         dotBaseSize: .1,
         waveSpeed: 2,
         waveIntensity: .9,
-        waveAmplitude: .5,
-        waveFrequency: 1.17,
+        waveAmplitude: .08,
+        waveFrequency: 1,
         octaveCount: 4,
         persistence: .05,
         windDirection: new THREE.Vector2(0.5, 0.5),
-        windIntensity: 0.01,
+        windIntensity: 0.3,
     }
 };
 
@@ -117,6 +117,8 @@ const shaderMaterial = new THREE.ShaderMaterial({
         windIntensity: { value: params.windIntensity },
     },
     vertexShader: `
+        precision highp float;
+
         uniform float screenWidth;
         uniform float screenHeight;
         uniform float time;
@@ -180,6 +182,7 @@ const shaderMaterial = new THREE.ShaderMaterial({
         
         float layeredNoiseWithWind(vec2 pos) {
             vec2 windEffectPos = pos + windDirection * windIntensity * time * turbulentNoise(pos);
+            // vec2 windEffectPos = pos;
             float currentNoise = turbulentNoise(pos);
             float shiftedNoise = turbulentNoise(pos + vec2(0.1, 0.1) * currentNoise);
             float combinedNoise = mix(currentNoise, shiftedNoise, 0.5);
@@ -189,13 +192,19 @@ const shaderMaterial = new THREE.ShaderMaterial({
         void main() {
             vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
             float wave = layeredNoiseWithWind(mvPosition.xy * 0.5) * waveIntensity;
-            gl_PointSize = clamp(dotBaseSize * (300.0 / -mvPosition.z) * (1.0 + wave * 1.5), 1.0, 100.0);
+            gl_PointSize = clamp(dotBaseSize * (200.0 / -mvPosition.z) * (1.0 + wave * 1.5), 1.0, 100.0);
             gl_Position = projectionMatrix * mvPosition;
         }
     `,
     fragmentShader: `
+        precision highp float;
+        float rand(vec2 co) {
+            return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
+        }
+        
         void main() {
-            gl_FragColor = vec4(1.0);
+            float dither = rand(gl_FragCoord.xy) * 0.0;
+            gl_FragColor = vec4(1.0) + dither;
         }
     `,
     transparent: true,
