@@ -18,8 +18,7 @@ const GUIConfiguration = {
     },
     waveGeometry: {
         steepness: { min: 0.5, max: 1, default: 1 }, // Adjusted min and default value
-        softness: { min: 0.1, max: 2, default: 1 },
-        trailingConvexity: { min: -1, max: 1, default: 0 },
+        convexity: { min: 0, max: 1, default: .5 },
     }
 };
 
@@ -94,11 +93,8 @@ guiCreator.setCallback('waveWidth', (value) => {
 guiCreator.setCallback('steepness', (value) => {
     shaderMaterial.uniforms.steepness.value = value;
 });
-guiCreator.setCallback('softness', (value) => {
-    shaderMaterial.uniforms.softness.value = value;
-});
-guiCreator.setCallback('trailingConvexity', (value) => {
-    shaderMaterial.uniforms.trailingConvexity.value = value;
+guiCreator.setCallback('convexity', (value) => {
+    shaderMaterial.uniforms.convexity.value = value;
 });
 
 
@@ -146,8 +142,7 @@ const shaderMaterial = new THREE.ShaderMaterial({
         frequency: { value: params.frequency },
         angle: { value: THREE.MathUtils.degToRad(params.angle) },
         steepness: { value: params.steepness },
-        softness: { value: params.softness },
-        trailingConvexity: { value: params.trailingConvexity },
+        convexity: { value: params.convexity },
     },
     vertexShader: `
         uniform float time;
@@ -157,8 +152,7 @@ const shaderMaterial = new THREE.ShaderMaterial({
         uniform float frequency;
         uniform float angle;
         uniform float steepness;
-        uniform float softness;
-        uniform float trailingConvexity;
+        uniform float convexity;
     
         void main() {
             vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
@@ -170,16 +164,13 @@ const shaderMaterial = new THREE.ShaderMaterial({
             float wave = 0.0;
     
             if (x < steepness) {
-                wave = pow(x / steepness, softness); 
+                wave = x / steepness; 
             } else {
-                float convexValue = pow((1.0 - x) / (1.0 - steepness), 2.0 + trailingConvexity);
-                wave = 1.0 - convexValue;
+                float trailing = (x - steepness) / (1.0 - steepness);
+                wave = 1.0 - pow(trailing, 2.0 / (1.0 - convexity));
             }
-    
-            wave = mix(0.5, 1.0, wave * softness);  // Applied softness to the overall wave function
             
             float size = mix(minDotSize, maxDotSize, wave);
-            
             gl_PointSize = size;
             gl_Position = projectionMatrix * mvPosition;
         }
