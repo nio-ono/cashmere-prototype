@@ -1,39 +1,83 @@
 import * as THREE from 'three';
 import * as dat from 'dat.gui';
 
-// === PRESETS ===
-
-const presets = {
-    default: {
-        cameraZPosition: 50,
-        gridSpacing: .5,
-        minDotSize: .5,
-        maxDotSize: 1.5,
-        waveSpeed: 2,
-        waveFrequency: .51
+// 1. GUI Configuration
+const GUIConfiguration = {
+    camera: {
+        cameraZPosition: { min: 10, max: 100, default: 50 }
+    },
+    grid: {
+        gridSpacing: { min: 0.1, max: 5, default: 1 },
+        minDotSize: { min: 0.1, max: 2, default: 1 },
+        maxDotSize: { min: 0.1, max: 20, default: 5 }
+    },
+    waveMovement: {
+        speed: { min: 0, max: 10, default: 2 },
+        frequency: { min: 0, max: 2, default: .5 }
     }
 };
 
-// === ACTIVE PARAMETERS ===
+// 2. Presets
+const presets = {
+    default: {}
+};
+for (let folder in GUIConfiguration) {
+    for (let param in GUIConfiguration[folder]) {
+        presets.default[param] = GUIConfiguration[folder][param].default;
+    }
+}
 
+// 3. GUICreator Class
+class GUICreator {
+    constructor(gui, configuration, params) {
+        this.gui = gui;
+        this.configuration = configuration;
+        this.params = params;
+        this.initGUI();
+    }
+
+    initGUI() {
+        for (let folderName in this.configuration) {
+            const folder = this.gui.addFolder(folderName);
+            folder.open();
+            for (let paramName in this.configuration[folderName]) {
+                const { min, max } = this.configuration[folderName][paramName];
+                folder.add(this.params, paramName, min, max).onChange((value) => {
+                    if (this.onChangeCallbacks[paramName]) {
+                        this.onChangeCallbacks[paramName](value);
+                    }
+                });
+            }
+        }
+    }
+
+    setCallback(paramName, callback) {
+        if (!this.onChangeCallbacks) this.onChangeCallbacks = {};
+        this.onChangeCallbacks[paramName] = callback;
+    }
+}
+
+// Active parameters from the default preset
 const params = presets.default;
 
 const gui = new dat.GUI();
-gui.add(params, 'cameraZPosition', 10, 100).onChange((value) => {
+const guiCreator = new GUICreator(gui, GUIConfiguration, params);
+
+guiCreator.setCallback('cameraZPosition', (value) => {
     camera.position.z = value;
 });
-gui.add(params, 'gridSpacing', 0.1, 5).onChange(createAndUpdateGrid);
-gui.add(params, 'minDotSize', 0.1, 2).onChange((value) => {
+guiCreator.setCallback('gridSpacing', createAndUpdateGrid);
+guiCreator.setCallback('minDotSize', (value) => {
     shaderMaterial.uniforms.minDotSize.value = value;
 });
-gui.add(params, 'maxDotSize', 0.1, 5).onChange((value) => {
+guiCreator.setCallback('maxDotSize', (value) => {
     shaderMaterial.uniforms.maxDotSize.value = value;
 });
-gui.add(params, 'waveSpeed', 0, 10).onChange((value) => {
-    shaderMaterial.uniforms.waveSpeed.value = value;
+guiCreator.setCallback('speed', (value) => {
+    shaderMaterial.uniforms.speed.value = value;
 });
-gui.add(params, 'waveFrequency', 0, 2).onChange((value) => {
-    shaderMaterial.uniforms.waveFrequency.value = value;
+guiCreator.setCallback('frequency', (value) => {
+    shaderMaterial.uniforms.frequency.value = value;
 });
 
 function createAndUpdateGrid(value) {
@@ -76,19 +120,19 @@ const shaderMaterial = new THREE.ShaderMaterial({
         time: { value: 0 },
         minDotSize: { value: params.minDotSize },
         maxDotSize: { value: params.maxDotSize },
-        waveSpeed: { value: params.waveSpeed },
-        waveFrequency: { value: params.waveFrequency }
+        speed: { value: params.speed },
+        frequency: { value: params.frequency }
     },
     vertexShader: `
         uniform float time;
         uniform float minDotSize;
         uniform float maxDotSize;
-        uniform float waveSpeed;
-        uniform float waveFrequency;
+        uniform float speed;
+        uniform float frequency;
 
         void main() {
             vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
-            float wave = 0.5 * sin(mvPosition.x * waveFrequency + time * waveSpeed) + 0.5; // Ranges from 0 to 1
+            float wave = 0.5 * sin(mvPosition.x * frequency + time * speed) + 0.5; // Ranges from 0 to 1
             float size = mix(minDotSize, maxDotSize, wave);
             gl_PointSize = size;
             gl_Position = projectionMatrix * mvPosition;
@@ -108,7 +152,7 @@ const particles = new THREE.Points(geometry, shaderMaterial);
 scene.add(particles);
 
 function animate() {
-    shaderMaterial.uniforms.time.value += params.waveSpeed * 0.01; // Smoother increase
+    shaderMaterial.uniforms.time.value += params.speed * 0.01; // Smoother increase
     requestAnimationFrame(animate);
     renderer.render(scene, camera);
 }
