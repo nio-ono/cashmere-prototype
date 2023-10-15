@@ -4,5 +4,6 @@ node_modules/
 dist/
 .parcel-cache/
 .production/
+.production/*
 .DS_Store
 .env.*
