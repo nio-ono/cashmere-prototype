@@ -5,7 +5,7 @@
   "description": "",
   "scripts": {
     "start": "parcel serve index.html",
-    "build": "parcel build index.html --public-url ./cashmere-prototype/ --dist-dir ./docs && node rename.js"
+    "build": "parcel build index.html --public-url /cashmere-prototype/ --dist-dir ./docs && node rename.js"
   },
   "keywords": [],
   "author": "",
