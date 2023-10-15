@@ -4,24 +4,26 @@ import * as dat from 'dat.gui';
 // GUI Configuration
 const GUIConfiguration = {
     camera: {
-        cameraZPosition: { min: 10, max: 200, default: 100 }
+        cameraZPosition: { min: 10, max: 200, default: 150 }
     },
     grid: {
-        gridSpacing: { min: 0.1, max: 5, default: 1 },
+        gridSpacing: { min: 0.1, max: 5, default: 2 },
         minDotSize: { min: 0.1, max: 2, default: 1 },
         maxDotSize: { min: 0.1, max: 20, default: 5 }
     },
     waveMovement: {
         speed: { min: 0, max: 10, default: 1 },
-        frequency: { min: 0, max: 2, default: .125 },
-        angle: { min: 0, max: 360, default: 20 },
+        frequency: { min: 0, max: 1, default: .06 },
+        angle: { min: 0, max: 360, default: 200 },
     },
     waveGeometry: {
         convexity: { min: 0, max: 1, default: .5 },
     },
     environment: {
         groundFriction: { min: 0, max: 1, default: .5 },
-        frothStrength: { min: 0, max: 100, default: 4 },
+        frothStrength: { min: 0, max: 20, default: 4 },
+        curvatureStrength: { min: 0, max: 50, default: 15 },
+        curvatureScale: { min: 1.0, max: 200.0, default: 80.0 },
     }
 };
 
@@ -102,6 +104,13 @@ guiCreator.setCallback('groundFriction', (value) => {
 guiCreator.setCallback('frothStrength', (value) => {
     shaderMaterial.uniforms.frothStrength.value = value;
 });
+guiCreator.setCallback('curvatureStrength', (value) => {
+    shaderMaterial.uniforms.curvatureStrength.value = value;
+});
+guiCreator.setCallback('curvatureScale', (value) => {
+    shaderMaterial.uniforms.curvatureScale.value = value;
+});
+
 
 function createAndUpdateGrid(value) {
     geometry.setAttribute('position', createGrid());
@@ -150,7 +159,9 @@ const shaderMaterial = new THREE.ShaderMaterial({
         groundFriction: { value: params.groundFriction },
         frothStrength:  { value: params.frothStrength },
         frothScale:     { value: 20.0 },
-        screenWidth: {value: window.innerWidth }
+        screenWidth: {value: window.innerWidth },
+        curvatureStrength: { value: params.curvatureStrength },
+        curvatureScale: { value: params.curvatureScale }
     },
     vertexShader: `
         // Perlin noise function
@@ -190,8 +201,10 @@ const shaderMaterial = new THREE.ShaderMaterial({
         uniform float angle;
         uniform float convexity;
         uniform float groundFriction;
-        uniform float frothStrength; // Defines how much the noise will affect the wave shape
-        uniform float frothScale;    // Controls the "zoom" of the noise
+        uniform float frothStrength;
+        uniform float frothScale; 
+        uniform float curvatureStrength;
+        uniform float curvatureScale;
         
         void main() {
             vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
@@ -199,14 +212,18 @@ const shaderMaterial = new THREE.ShaderMaterial({
             float pi = 3.14159265359;
             float adjustedX = mvPosition.x * cos(angle) - mvPosition.y * sin(angle);
             
-            // Compute the noise for the position
-            float noiseValue = snoise( vec2(mvPosition.x, mvPosition.y) * frothScale);
+            // Compute the noise for curvature
+            float curvatureNoiseValue = snoise(vec2(mvPosition.x / curvatureScale, mvPosition.y / curvatureScale));
+            adjustedX += curvatureStrength * curvatureNoiseValue;
             
-            // Add the noise to the x coordinate, effectively warping the wave's phase
-            adjustedX += frothStrength * noiseValue;
-    
+            // Compute the noise for froth
+            float frothNoiseValue = snoise(vec2(mvPosition.x * frothScale, mvPosition.y * frothScale)); // using a different scale for froth
+            
+            // Add the noise to the x coordinate
+            adjustedX += frothStrength * frothNoiseValue;
+            
             float x = mod(adjustedX * frequency - time * speed, 2.0 * pi) / (2.0 * pi);
-    
+            
             float wave;
             float curvePower = 2.0 + 8.0 * convexity;
             wave = pow(x, curvePower);
