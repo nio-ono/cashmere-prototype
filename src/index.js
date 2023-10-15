@@ -6,11 +6,14 @@ const GUIConfiguration = {
     camera: {
         cameraZ: { min: 10, max: 200, default: 150 }
     },
+    color: {
+        foreground: { default: "rgb(147, 144, 139)"},
+        background: { default: "rgb(0,0,0)"}
+    },
     dots: {
         spacing: { min: 0.5, max: 5, default: 2 },
         minSize: { min: 0, max: 2, default: 1 },
         maxSize: { min: 0.1, max: 20, default: 7 },
-        color: { default: "#93908b"},
     },
     waveMovement: {
         speed: { min: 0, max: 4, default: 1 },
@@ -52,7 +55,7 @@ class GUICreator {
             const folder = this.gui.addFolder(folderName);
             folder.open();
             for (let paramName in this.configuration[folderName]) {
-                if (paramName === 'color') {
+                if (folderName === "color") {
                     folder.addColor(this.params, paramName).onChange((value) => {
                         if (this.onChangeCallbacks[paramName]) {
                             this.onChangeCallbacks[paramName](value);
@@ -119,8 +122,12 @@ guiCreator.setCallback('curvatureScale', (value) => {
 guiCreator.setCallback('timeModulation', (value) => {
     shaderMaterial.uniforms.timeModulation.value = value;
 });
-guiCreator.setCallback('color', (value) => {
-    shaderMaterial.uniforms.color.value.set(value);
+guiCreator.setCallback('foreground', (value) => {
+    shaderMaterial.uniforms.foreground.value.set(value);
+});
+guiCreator.setCallback('background', (value) => {
+    shaderMaterial.uniforms.background.value.set(value);
+    renderer.setClearColor(new THREE.Color(value));
 });
 
 function createAndUpdateGrid(value) {
@@ -138,6 +145,7 @@ camera.position.z = params.cameraZ;
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setClearColor(new THREE.Color(params.background));
 document.body.appendChild(renderer.domElement);
 
 let gridRows = Math.floor(window.innerWidth / params.spacing);
@@ -173,7 +181,9 @@ const shaderMaterial = new THREE.ShaderMaterial({
         curvatureStrength: { value: params.curvatureStrength },
         curvatureScale: { value: params.curvatureScale },
         timeModulation: { value: params.timeModulation },
-        color: { value: new THREE.Color(0.6, 0.6, 0.6) },
+        foreground: { value: new THREE.Color(params.foreground) },
+        background: { value: new THREE.Color(params.background) },
+
     },
     vertexShader: `
         // Perlin noise function
@@ -256,9 +266,15 @@ const shaderMaterial = new THREE.ShaderMaterial({
         }
     `,
     fragmentShader: `
-        uniform vec3 color;
+        uniform vec3 foreground;
+        uniform vec3 background;
+        
         void main() {
-            gl_FragColor = vec4(color, 1.0); 
+            if (gl_FragCoord.z > 0.5) { // Check depth, adjust condition as needed
+                gl_FragColor = vec4(foreground, 1.0);
+            } else {
+                gl_FragColor = vec4(background, 1.0);
+            }
         }
     `,
     transparent: true,
