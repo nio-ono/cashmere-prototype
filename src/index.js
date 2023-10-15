@@ -4,12 +4,13 @@ import * as dat from 'dat.gui';
 // GUI Configuration
 const GUIConfiguration = {
     camera: {
-        cameraZPosition: { min: 10, max: 200, default: 150 }
+        cameraZ: { min: 10, max: 200, default: 150 }
     },
-    grid: {
-        gridSpacing: { min: 0.5, max: 5, default: 2 },
-        minDotSize: { min: 0, max: 2, default: 1 },
-        maxDotSize: { min: 0.1, max: 20, default: 7 }
+    dots: {
+        spacing: { min: 0.5, max: 5, default: 2 },
+        minSize: { min: 0, max: 2, default: 1 },
+        maxSize: { min: 0.1, max: 20, default: 7 },
+        color: { default: "#999999"},
     },
     waveMovement: {
         speed: { min: 0, max: 4, default: 1 },
@@ -51,12 +52,20 @@ class GUICreator {
             const folder = this.gui.addFolder(folderName);
             folder.open();
             for (let paramName in this.configuration[folderName]) {
-                const { min, max } = this.configuration[folderName][paramName];
-                folder.add(this.params, paramName, min, max).onChange((value) => {
-                    if (this.onChangeCallbacks[paramName]) {
-                        this.onChangeCallbacks[paramName](value);
-                    }
-                });
+                if (paramName === 'color') {
+                    folder.addColor(this.params, paramName).onChange((value) => {
+                        if (this.onChangeCallbacks[paramName]) {
+                            this.onChangeCallbacks[paramName](value);
+                        }
+                    });
+                } else {
+                    const { min, max } = this.configuration[folderName][paramName];
+                    folder.add(this.params, paramName, min, max).onChange((value) => {
+                        if (this.onChangeCallbacks[paramName]) {
+                            this.onChangeCallbacks[paramName](value);
+                        }
+                    });
+                }
             }
         }
     }
@@ -73,15 +82,15 @@ const params = presets.default;
 const gui = new dat.GUI();
 const guiCreator = new GUICreator(gui, GUIConfiguration, params);
 
-guiCreator.setCallback('cameraZPosition', (value) => {
+guiCreator.setCallback('cameraZ', (value) => {
     camera.position.z = value;
 });
-guiCreator.setCallback('gridSpacing', createAndUpdateGrid);
-guiCreator.setCallback('minDotSize', (value) => {
-    shaderMaterial.uniforms.minDotSize.value = value;
+guiCreator.setCallback('spacing', createAndUpdateGrid);
+guiCreator.setCallback('minSize', (value) => {
+    shaderMaterial.uniforms.minSize.value = value;
 });
-guiCreator.setCallback('maxDotSize', (value) => {
-    shaderMaterial.uniforms.maxDotSize.value = value;
+guiCreator.setCallback('maxSize', (value) => {
+    shaderMaterial.uniforms.maxSize.value = value;
 });
 guiCreator.setCallback('speed', (value) => {
     shaderMaterial.uniforms.speed.value = value;
@@ -110,11 +119,14 @@ guiCreator.setCallback('curvatureScale', (value) => {
 guiCreator.setCallback('timeModulation', (value) => {
     shaderMaterial.uniforms.timeModulation.value = value;
 });
+guiCreator.setCallback('color', (value) => {
+    shaderMaterial.uniforms.color.value.set(value);
+});
 
 function createAndUpdateGrid(value) {
     geometry.setAttribute('position', createGrid());
-    gridRows = Math.floor(window.innerWidth / params.gridSpacing);
-    gridCols = Math.floor(window.innerHeight / params.gridSpacing);
+    gridRows = Math.floor(window.innerWidth / params.spacing);
+    gridCols = Math.floor(window.innerHeight / params.spacing);
 }
 
 const vertices = [];
@@ -122,21 +134,21 @@ const vertices = [];
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 
-camera.position.z = params.cameraZPosition;
+camera.position.z = params.cameraZ;
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-let gridRows = Math.floor(window.innerWidth / params.gridSpacing);
-let gridCols = Math.floor(window.innerHeight / params.gridSpacing);
+let gridRows = Math.floor(window.innerWidth / params.spacing);
+let gridCols = Math.floor(window.innerHeight / params.spacing);
 
 function createGrid() {
     vertices.length = 0;
-    const halfWidth = (gridRows * params.gridSpacing) / 2;
-    const halfHeight = (gridCols * params.gridSpacing) / 2;
-    for (let i = -halfWidth; i <= halfWidth; i += params.gridSpacing) {
-        for (let j = -halfHeight; j <= halfHeight; j += params.gridSpacing) {
+    const halfWidth = (gridRows * params.spacing) / 2;
+    const halfHeight = (gridCols * params.spacing) / 2;
+    for (let i = -halfWidth; i <= halfWidth; i += params.spacing) {
+        for (let j = -halfHeight; j <= halfHeight; j += params.spacing) {
             vertices.push(i, j, 0);
         }
     }
@@ -149,8 +161,8 @@ geometry.setAttribute('position', createGrid());
 const shaderMaterial = new THREE.ShaderMaterial({
     uniforms: {
         time: { value: 0 },
-        minDotSize: { value: params.minDotSize },
-        maxDotSize: { value: params.maxDotSize },
+        minSize: { value: params.minSize },
+        maxSize: { value: params.maxSize },
         speed: { value: params.speed },
         frequency: { value: params.frequency },
         angle: { value: THREE.MathUtils.degToRad(params.angle) },
@@ -161,6 +173,7 @@ const shaderMaterial = new THREE.ShaderMaterial({
         curvatureStrength: { value: params.curvatureStrength },
         curvatureScale: { value: params.curvatureScale },
         timeModulation: { value: params.timeModulation },
+        color: { value: new THREE.Color(0.6, 0.6, 0.6) },
     },
     vertexShader: `
         // Perlin noise function
@@ -193,8 +206,8 @@ const shaderMaterial = new THREE.ShaderMaterial({
             return 130.0 * dot(m, g);
         }
         uniform float time;
-        uniform float minDotSize;
-        uniform float maxDotSize;
+        uniform float minSize;
+        uniform float maxSize;
         uniform float speed;
         uniform float frequency;
         uniform float angle;
@@ -237,14 +250,15 @@ const shaderMaterial = new THREE.ShaderMaterial({
                 wave = 0.0;  // sharp drop
             }
             
-            float size = mix(minDotSize, maxDotSize, wave);
+            float size = mix(minSize, maxSize, wave);
             gl_PointSize = size;
             gl_Position = projectionMatrix * mvPosition;
         }
     `,
     fragmentShader: `
+        uniform vec3 color;
         void main() {
-            gl_FragColor = vec4(0.6); 
+            gl_FragColor = vec4(color, 1.0); 
         }
     `,
     transparent: true,
