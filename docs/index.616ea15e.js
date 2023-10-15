@@ -664,7 +664,7 @@ const presets = {
     default: {}
 };
 for(let folder in GUIConfiguration)for(let param in GUIConfiguration[folder])presets.default[param] = GUIConfiguration[folder][param].default;
-// 3. GUICreator Class
+// GUICreator Class
 class GUICreator {
     constructor(gui, configuration, params){
         this.gui = gui;
@@ -697,6 +697,7 @@ const params = presets.default;
 if (showControlsByDefault) {
     const gui = new _datGui.GUI();
     const guiCreator = new GUICreator(gui, GUIConfiguration, params);
+    gui.close();
     guiCreator.setCallback("cameraZ", (value)=>{
         camera.position.z = value;
     });
