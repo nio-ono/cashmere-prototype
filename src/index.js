@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import * as dat from 'dat.gui';
 
+const showControlsByDefault = true;
+
 // GUI Configuration
 const GUIConfiguration = {
     camera: {
@@ -81,7 +83,7 @@ class GUICreator {
 
 // Active parameters from the default preset
 const params = presets.default;
-if (process.env.PARCEL_PUBLIC_DEMO === 'true') {
+if (showControlsByDefault) {
     const gui = new dat.GUI();
     const guiCreator = new GUICreator(gui, GUIConfiguration, params);
     
