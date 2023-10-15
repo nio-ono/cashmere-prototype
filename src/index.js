@@ -22,7 +22,7 @@ const GUIConfiguration = {
     chaos: {
         frothiness: { min: 0, max: 30, default: 0 },
         curvatureStrength: { min: 0, max: 500, default: 100 },
-        curvatureScale: { min: 20.0, max: 1000.0, default: 500.0 },
+        curvatureScale: { min: 20.0, max: 1000.0, default: 400.0 },
         timeModulation: { min: 0, max: 100, default: 15 }
     }
 };
