@@ -7,9 +7,9 @@ const GUIConfiguration = {
         cameraZPosition: { min: 10, max: 200, default: 150 }
     },
     grid: {
-        gridSpacing: { min: 0.1, max: 5, default: 2 },
+        gridSpacing: { min: 0.5, max: 5, default: 2 },
         minDotSize: { min: 0.1, max: 2, default: 2 },
-        maxDotSize: { min: 0.1, max: 20, default: 5 }
+        maxDotSize: { min: 0.1, max: 20, default: 7 }
     },
     waveMovement: {
         speed: { min: 0, max: 4, default: 1 },
@@ -21,10 +21,10 @@ const GUIConfiguration = {
     },
     chaos: {
         groundFriction: { min: 0, max: 1, default: .5 },
-        frothStrength: { min: 0, max: 20, default: 0 },
+        frothStrength: { min: 0, max: 30, default: 0 },
         curvatureStrength: { min: 0, max: 500, default: 100 },
         curvatureScale: { min: 20.0, max: 1000.0, default: 500.0 },
-        timeModulation: { min: 0, max: 100, default: 30 }
+        timeModulation: { min: 0, max: 100, default: 20 }
     }
 };
 
