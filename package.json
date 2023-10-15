@@ -5,7 +5,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "parcel serve index.html",
-    "build": "parcel build index.html --dist-dir ./dist"
+    "build": "parcel build index.html --dist-dir ./docs"
   },
   "keywords": [],
   "author": "",
@@ -14,5 +14,9 @@
     "dat.gui": "^0.7.9",
     "parcel": "^2.10.0",
     "three": "^0.157.0"
+  },
+  "devDependencies": {
+    "cssnano": "^6.0.1",
+    "postcss": "^8.4.31"
   }
 }
