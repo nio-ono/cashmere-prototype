@@ -81,54 +81,55 @@ class GUICreator {
 
 // Active parameters from the default preset
 const params = presets.default;
-
-const gui = new dat.GUI();
-const guiCreator = new GUICreator(gui, GUIConfiguration, params);
-
-guiCreator.setCallback('cameraZ', (value) => {
-    camera.position.z = value;
-});
-guiCreator.setCallback('spacing', createAndUpdateGrid);
-guiCreator.setCallback('minSize', (value) => {
-    shaderMaterial.uniforms.minSize.value = value;
-});
-guiCreator.setCallback('maxSize', (value) => {
-    shaderMaterial.uniforms.maxSize.value = value;
-});
-guiCreator.setCallback('speed', (value) => {
-    shaderMaterial.uniforms.speed.value = value;
-});
-guiCreator.setCallback('frequency', (value) => {
-    shaderMaterial.uniforms.frequency.value = value;
-});
-guiCreator.setCallback('angle', (value) => {
-    shaderMaterial.uniforms.angle.value = THREE.MathUtils.degToRad(value);
-});
-guiCreator.setCallback('waveWidth', (value) => {
-    shaderMaterial.uniforms.waveWidth.value = value;
-});
-guiCreator.setCallback('convexity', (value) => {
-    shaderMaterial.uniforms.convexity.value = value;
-});
-guiCreator.setCallback('frothiness', (value) => {
-    shaderMaterial.uniforms.frothiness.value = value;
-});
-guiCreator.setCallback('curvatureStrength', (value) => {
-    shaderMaterial.uniforms.curvatureStrength.value = value;
-});
-guiCreator.setCallback('curvatureScale', (value) => {
-    shaderMaterial.uniforms.curvatureScale.value = value;
-});
-guiCreator.setCallback('timeModulation', (value) => {
-    shaderMaterial.uniforms.timeModulation.value = value;
-});
-guiCreator.setCallback('foreground', (value) => {
-    shaderMaterial.uniforms.foreground.value.set(value);
-});
-guiCreator.setCallback('background', (value) => {
-    shaderMaterial.uniforms.background.value.set(value);
-    renderer.setClearColor(new THREE.Color(value));
-});
+if (process.env.PARCEL_PUBLIC_DEMO === 'true') {
+    const gui = new dat.GUI();
+    const guiCreator = new GUICreator(gui, GUIConfiguration, params);
+    
+    guiCreator.setCallback('cameraZ', (value) => {
+        camera.position.z = value;
+    });
+    guiCreator.setCallback('spacing', createAndUpdateGrid);
+    guiCreator.setCallback('minSize', (value) => {
+        shaderMaterial.uniforms.minSize.value = value;
+    });
+    guiCreator.setCallback('maxSize', (value) => {
+        shaderMaterial.uniforms.maxSize.value = value;
+    });
+    guiCreator.setCallback('speed', (value) => {
+        shaderMaterial.uniforms.speed.value = value;
+    });
+    guiCreator.setCallback('frequency', (value) => {
+        shaderMaterial.uniforms.frequency.value = value;
+    });
+    guiCreator.setCallback('angle', (value) => {
+        shaderMaterial.uniforms.angle.value = THREE.MathUtils.degToRad(value);
+    });
+    guiCreator.setCallback('waveWidth', (value) => {
+        shaderMaterial.uniforms.waveWidth.value = value;
+    });
+    guiCreator.setCallback('convexity', (value) => {
+        shaderMaterial.uniforms.convexity.value = value;
+    });
+    guiCreator.setCallback('frothiness', (value) => {
+        shaderMaterial.uniforms.frothiness.value = value;
+    });
+    guiCreator.setCallback('curvatureStrength', (value) => {
+        shaderMaterial.uniforms.curvatureStrength.value = value;
+    });
+    guiCreator.setCallback('curvatureScale', (value) => {
+        shaderMaterial.uniforms.curvatureScale.value = value;
+    });
+    guiCreator.setCallback('timeModulation', (value) => {
+        shaderMaterial.uniforms.timeModulation.value = value;
+    });
+    guiCreator.setCallback('foreground', (value) => {
+        shaderMaterial.uniforms.foreground.value.set(value);
+    });
+    guiCreator.setCallback('background', (value) => {
+        shaderMaterial.uniforms.background.value.set(value);
+        renderer.setClearColor(new THREE.Color(value));
+    });
+}
 
 function createAndUpdateGrid(value) {
     geometry.setAttribute('position', createGrid());

@@ -3,3 +3,6 @@
 node_modules/
 dist/
 .parcel-cache/
+.production/
+.DS_Store
+.env.*
