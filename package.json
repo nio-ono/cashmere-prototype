@@ -1,10 +1,11 @@
 {
+  "homepage": "/cashmere-prototype/",
   "name": "cashmere-prototype",
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "start": "parcel serve index.html --dist-dir ./docs",
-    "build": "parcel build index.html --public-url /cashmere-prototype/ --dist-dir ./docs && node rename.js"
+    "start": "parcel serve index.html",
+    "build": "parcel build index.html --public-url ./cashmere-prototype/ --dist-dir ./docs && node rename.js"
   },
   "keywords": [],
   "author": "",
