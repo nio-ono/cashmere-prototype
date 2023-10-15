@@ -4,12 +4,12 @@ import * as dat from 'dat.gui';
 // GUI Configuration
 const GUIConfiguration = {
     camera: {
-        cameraZPosition: { min: 10, max: 200, default: 150 }
+        cameraZPosition: { min: 10, max: 200, default: 100 }
     },
     grid: {
         gridSpacing: { min: 0.1, max: 5, default: 2 },
         minDotSize: { min: 0.1, max: 2, default: 1 },
-        maxDotSize: { min: 0.1, max: 20, default: 5 }
+        maxDotSize: { min: 0.1, max: 20, default: 10 }
     },
     waveMovement: {
         speed: { min: 0, max: 2, default: .5 },
@@ -239,7 +239,7 @@ const shaderMaterial = new THREE.ShaderMaterial({
     `,
     fragmentShader: `
         void main() {
-            gl_FragColor = vec4(1.0); 
+            gl_FragColor = vec4(0.6); 
         }
     `,
     transparent: true,
