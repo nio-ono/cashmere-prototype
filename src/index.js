@@ -14,15 +14,15 @@ const GUIConfiguration = {
     waveMovement: {
         speed: { min: 0, max: 4, default: 1 },
         frequency: { min: 0, max: .25, default: .03 },
-        angle: { min: 0, max: 360, default: 40 },
+        angle: { min: 0, max: 360, default: 30 },
     },
     waveGeometry: {
         convexity: { min: 0, max: 1, default: 0.5 },
     },
     chaos: {
         frothiness: { min: 0, max: 30, default: 0 },
-        curvatureStrength: { min: 0, max: 500, default: 100 },
-        curvatureScale: { min: 20.0, max: 1000.0, default: 400.0 },
+        curvatureStrength: { min: 0, max: 500, default: 50 },
+        curvatureScale: { min: 20.0, max: 1000.0, default: 300.0 },
         timeModulation: { min: 0, max: 100, default: 15 }
     }
 };
