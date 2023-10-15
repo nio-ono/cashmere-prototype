@@ -4,16 +4,16 @@ import * as dat from 'dat.gui';
 // GUI Configuration
 const GUIConfiguration = {
     camera: {
-        cameraZPosition: { min: 10, max: 200, default: 100 }
+        cameraZPosition: { min: 10, max: 200, default: 150 }
     },
     grid: {
         gridSpacing: { min: 0.1, max: 5, default: 2 },
-        minDotSize: { min: 0.1, max: 2, default: 1 },
-        maxDotSize: { min: 0.1, max: 20, default: 10 }
+        minDotSize: { min: 0.1, max: 2, default: 2 },
+        maxDotSize: { min: 0.1, max: 20, default: 5 }
     },
     waveMovement: {
-        speed: { min: 0, max: 2, default: .5 },
-        frequency: { min: 0, max: .5, default: .02 },
+        speed: { min: 0, max: 2, default: .8 },
+        frequency: { min: 0, max: .5, default: .05 },
         angle: { min: 0, max: 360, default: 45 },
     },
     waveGeometry: {
