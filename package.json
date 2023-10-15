@@ -11,6 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "parcel":"^1.12.5",
     "dat.gui": "^0.7.9",
     "three": "^0.157.0",
     "three-noise": "^1.1.2"
