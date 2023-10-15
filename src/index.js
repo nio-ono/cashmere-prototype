@@ -8,7 +8,7 @@ const GUIConfiguration = {
     },
     grid: {
         gridSpacing: { min: 0.5, max: 5, default: 2 },
-        minDotSize: { min: 0.1, max: 2, default: 2 },
+        minDotSize: { min: 0, max: 2, default: 1 },
         maxDotSize: { min: 0.1, max: 20, default: 7 }
     },
     waveMovement: {
@@ -17,7 +17,7 @@ const GUIConfiguration = {
         angle: { min: 0, max: 360, default: 40 },
     },
     waveGeometry: {
-        convexity: { min: 0, max: 1, default: .5 },
+        convexity: { min: 0, max: 1, default: 0.5 },
     },
     chaos: {
         frothiness: { min: 0, max: 30, default: 0 },
