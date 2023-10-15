@@ -21,6 +21,8 @@ const GUIConfiguration = {
     },
     environment: {
         groundFriction: { min: 0, max: 1, default: .5 },
+        noiseStrength: { min: 0, max: 100, default: 4 },
+        noiseScale: { min: 0, max: 100, default: 50 },
     }
 };
 
@@ -98,6 +100,12 @@ guiCreator.setCallback('convexity', (value) => {
 guiCreator.setCallback('groundFriction', (value) => {
     shaderMaterial.uniforms.groundFriction.value = value;
 });
+guiCreator.setCallback('noiseScale', (value) => {
+    shaderMaterial.uniforms.noiseScale.value = value;
+});
+guiCreator.setCallback('noiseStrength', (value) => {
+    shaderMaterial.uniforms.noiseStrength.value = value;
+});
 
 function createAndUpdateGrid(value) {
     geometry.setAttribute('position', createGrid());
@@ -144,8 +152,40 @@ const shaderMaterial = new THREE.ShaderMaterial({
         angle: { value: THREE.MathUtils.degToRad(params.angle) },
         convexity: { value: params.convexity },
         groundFriction: { value: params.groundFriction },
+        noiseStrength:  { value: params.noiseStrength },
+        noiseScale:     { value: params.noiseScale },
+        screenWidth: {value: window.innerWidth }
     },
     vertexShader: `
+        // Perlin noise function
+        vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+        vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+        vec3 permute(vec3 x) { return mod289(((x*34.0)+1.0)*x); }
+        
+        float snoise(vec2 v) {
+            const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
+            vec2 i  = floor(v + dot(v, C.yy) );
+            vec2 x0 = v - i + dot(i, C.xx);
+            vec2 i1;
+            i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+            vec4 x12 = x0.xyxy + C.xxzz;
+            x12.xy -= i1;
+            i = mod289(i);
+            vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 ))
+                  + i.x + vec3(0.0, i1.x, 1.0 ));
+            vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
+            m = m*m ;
+            m = m*m ;
+            vec3 x = 2.0 * fract(p * C.www) - 1.0;
+            vec3 h = abs(x) - 0.5;
+            vec3 ox = floor(x + 0.5);
+            vec3 a0 = x - ox;
+            m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
+            vec3 g;
+            g.x  = a0.x  * x0.x  + h.x  * x0.y;
+            g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+            return 130.0 * dot(m, g);
+        }
         uniform float time;
         uniform float minDotSize;
         uniform float maxDotSize;
@@ -154,27 +194,35 @@ const shaderMaterial = new THREE.ShaderMaterial({
         uniform float angle;
         uniform float convexity;
         uniform float groundFriction;
-    
+        uniform float noiseStrength; // Defines how much the noise will affect the wave shape
+        uniform float noiseScale;    // Controls the "zoom" of the noise
+        
         void main() {
             vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-        
+            
             float pi = 3.14159265359;
             float adjustedX = mvPosition.x * cos(angle) - mvPosition.y * sin(angle);
+            
+            // Compute the noise for the position
+            float noiseValue = snoise( vec2(mvPosition.x, mvPosition.y) * noiseScale);
+            
+            // Add the noise to the x coordinate, effectively warping the wave's phase
+            adjustedX += noiseStrength * noiseValue;
+    
             float x = mod(adjustedX * frequency - time * speed, 2.0 * pi) / (2.0 * pi);
-        
+    
             float wave;
             float curvePower = 2.0 + 8.0 * convexity;
             wave = pow(x, curvePower);
-        
+            
             if (x > 0.99) { // Very close to the end
                 wave = 0.0;  // sharp drop
             }
-        
+            
             float size = mix(minDotSize, maxDotSize, wave);
             gl_PointSize = size;
             gl_Position = projectionMatrix * mvPosition;
         }
-
     `,
     fragmentShader: `
         void main() {
