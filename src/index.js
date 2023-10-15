@@ -12,9 +12,9 @@ const GUIConfiguration = {
         maxDotSize: { min: 0.1, max: 20, default: 5 }
     },
     waveMovement: {
-        speed: { min: 0, max: 5, default: .7 },
-        frequency: { min: 0, max: .5, default: .05 },
-        angle: { min: 0, max: 360, default: 45 },
+        speed: { min: 0, max: 4, default: 1 },
+        frequency: { min: 0, max: .25, default: .03 },
+        angle: { min: 0, max: 360, default: 40 },
     },
     waveGeometry: {
         convexity: { min: 0, max: 1, default: .5 },
@@ -22,9 +22,9 @@ const GUIConfiguration = {
     chaos: {
         groundFriction: { min: 0, max: 1, default: .5 },
         frothStrength: { min: 0, max: 20, default: 0 },
-        curvatureStrength: { min: 0, max: 100, default: 50 },
-        curvatureScale: { min: 20.0, max: 1000.0, default: 300.0 },
-        timeModulation: { min: 0, max: 100, default: 10 }
+        curvatureStrength: { min: 0, max: 500, default: 100 },
+        curvatureScale: { min: 20.0, max: 1000.0, default: 500.0 },
+        timeModulation: { min: 0, max: 100, default: 30 }
     }
 };
 
