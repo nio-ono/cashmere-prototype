@@ -12,18 +12,19 @@ const GUIConfiguration = {
         maxDotSize: { min: 0.1, max: 20, default: 5 }
     },
     waveMovement: {
-        speed: { min: 0, max: 2, default: .7 },
+        speed: { min: 0, max: 5, default: .7 },
         frequency: { min: 0, max: .5, default: .05 },
         angle: { min: 0, max: 360, default: 45 },
     },
     waveGeometry: {
         convexity: { min: 0, max: 1, default: .5 },
     },
-    environment: {
+    chaos: {
         groundFriction: { min: 0, max: 1, default: .5 },
         frothStrength: { min: 0, max: 20, default: 0 },
-        curvatureStrength: { min: 0, max: 50, default: 50 },
-        curvatureScale: { min: 20.0, max: 400.0, default: 280.0 },
+        curvatureStrength: { min: 0, max: 100, default: 50 },
+        curvatureScale: { min: 20.0, max: 1000.0, default: 300.0 },
+        timeModulation: { min: 0, max: 100, default: 10 }
     }
 };
 
@@ -110,7 +111,9 @@ guiCreator.setCallback('curvatureStrength', (value) => {
 guiCreator.setCallback('curvatureScale', (value) => {
     shaderMaterial.uniforms.curvatureScale.value = value;
 });
-
+guiCreator.setCallback('timeModulation', (value) => {
+    shaderMaterial.uniforms.timeModulation.value = value;
+});
 
 function createAndUpdateGrid(value) {
     geometry.setAttribute('position', createGrid());
@@ -161,7 +164,8 @@ const shaderMaterial = new THREE.ShaderMaterial({
         frothScale:     { value: 20.0 },
         screenWidth: {value: window.innerWidth },
         curvatureStrength: { value: params.curvatureStrength },
-        curvatureScale: { value: params.curvatureScale }
+        curvatureScale: { value: params.curvatureScale },
+        timeModulation: { value: params.timeModulation },
     },
     vertexShader: `
         // Perlin noise function
@@ -205,6 +209,7 @@ const shaderMaterial = new THREE.ShaderMaterial({
         uniform float frothScale; 
         uniform float curvatureStrength;
         uniform float curvatureScale;
+        uniform float timeModulation;
         
         void main() {
             vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
@@ -213,11 +218,17 @@ const shaderMaterial = new THREE.ShaderMaterial({
             float adjustedX = mvPosition.x * cos(angle) - mvPosition.y * sin(angle);
             
             // Compute the noise for curvature
-            float curvatureNoiseValue = snoise(vec2(mvPosition.x / curvatureScale, mvPosition.y / curvatureScale));
+            float curvatureNoiseValue = snoise(vec2(
+                (mvPosition.x + time * timeModulation) / curvatureScale,
+                (mvPosition.y + time * timeModulation) / curvatureScale
+            ));
             adjustedX += curvatureStrength * curvatureNoiseValue;
             
             // Compute the noise for froth
-            float frothNoiseValue = snoise(vec2(mvPosition.x * frothScale, mvPosition.y * frothScale)); // using a different scale for froth
+            float frothNoiseValue = snoise(vec2(
+                (mvPosition.x * frothScale),
+                (mvPosition.y * frothScale)
+            )); 
             
             // Add the noise to the x coordinate
             adjustedX += frothStrength * frothNoiseValue;
