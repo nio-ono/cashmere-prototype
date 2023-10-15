@@ -21,8 +21,7 @@ const GUIConfiguration = {
     },
     environment: {
         groundFriction: { min: 0, max: 1, default: .5 },
-        noiseStrength: { min: 0, max: 100, default: 4 },
-        noiseScale: { min: 0, max: 100, default: 50 },
+        frothStrength: { min: 0, max: 100, default: 4 },
     }
 };
 
@@ -100,11 +99,8 @@ guiCreator.setCallback('convexity', (value) => {
 guiCreator.setCallback('groundFriction', (value) => {
     shaderMaterial.uniforms.groundFriction.value = value;
 });
-guiCreator.setCallback('noiseScale', (value) => {
-    shaderMaterial.uniforms.noiseScale.value = value;
-});
-guiCreator.setCallback('noiseStrength', (value) => {
-    shaderMaterial.uniforms.noiseStrength.value = value;
+guiCreator.setCallback('frothStrength', (value) => {
+    shaderMaterial.uniforms.frothStrength.value = value;
 });
 
 function createAndUpdateGrid(value) {
@@ -152,8 +148,8 @@ const shaderMaterial = new THREE.ShaderMaterial({
         angle: { value: THREE.MathUtils.degToRad(params.angle) },
         convexity: { value: params.convexity },
         groundFriction: { value: params.groundFriction },
-        noiseStrength:  { value: params.noiseStrength },
-        noiseScale:     { value: params.noiseScale },
+        frothStrength:  { value: params.frothStrength },
+        frothScale:     { value: 20.0 },
         screenWidth: {value: window.innerWidth }
     },
     vertexShader: `
@@ -194,8 +190,8 @@ const shaderMaterial = new THREE.ShaderMaterial({
         uniform float angle;
         uniform float convexity;
         uniform float groundFriction;
-        uniform float noiseStrength; // Defines how much the noise will affect the wave shape
-        uniform float noiseScale;    // Controls the "zoom" of the noise
+        uniform float frothStrength; // Defines how much the noise will affect the wave shape
+        uniform float frothScale;    // Controls the "zoom" of the noise
         
         void main() {
             vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
@@ -204,10 +200,10 @@ const shaderMaterial = new THREE.ShaderMaterial({
             float adjustedX = mvPosition.x * cos(angle) - mvPosition.y * sin(angle);
             
             // Compute the noise for the position
-            float noiseValue = snoise( vec2(mvPosition.x, mvPosition.y) * noiseScale);
+            float noiseValue = snoise( vec2(mvPosition.x, mvPosition.y) * frothScale);
             
             // Add the noise to the x coordinate, effectively warping the wave's phase
-            adjustedX += noiseStrength * noiseValue;
+            adjustedX += frothStrength * noiseValue;
     
             float x = mod(adjustedX * frequency - time * speed, 2.0 * pi) / (2.0 * pi);
     
