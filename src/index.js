@@ -20,11 +20,10 @@ const GUIConfiguration = {
         convexity: { min: 0, max: 1, default: .5 },
     },
     chaos: {
-        groundFriction: { min: 0, max: 1, default: .5 },
-        frothStrength: { min: 0, max: 30, default: 0 },
+        frothiness: { min: 0, max: 30, default: 0 },
         curvatureStrength: { min: 0, max: 500, default: 100 },
         curvatureScale: { min: 20.0, max: 1000.0, default: 500.0 },
-        timeModulation: { min: 0, max: 100, default: 20 }
+        timeModulation: { min: 0, max: 100, default: 15 }
     }
 };
 
@@ -99,11 +98,8 @@ guiCreator.setCallback('waveWidth', (value) => {
 guiCreator.setCallback('convexity', (value) => {
     shaderMaterial.uniforms.convexity.value = value;
 });
-guiCreator.setCallback('groundFriction', (value) => {
-    shaderMaterial.uniforms.groundFriction.value = value;
-});
-guiCreator.setCallback('frothStrength', (value) => {
-    shaderMaterial.uniforms.frothStrength.value = value;
+guiCreator.setCallback('frothiness', (value) => {
+    shaderMaterial.uniforms.frothiness.value = value;
 });
 guiCreator.setCallback('curvatureStrength', (value) => {
     shaderMaterial.uniforms.curvatureStrength.value = value;
@@ -159,8 +155,7 @@ const shaderMaterial = new THREE.ShaderMaterial({
         frequency: { value: params.frequency },
         angle: { value: THREE.MathUtils.degToRad(params.angle) },
         convexity: { value: params.convexity },
-        groundFriction: { value: params.groundFriction },
-        frothStrength:  { value: params.frothStrength },
+        frothiness:  { value: params.frothiness },
         frothScale:     { value: 20.0 },
         screenWidth: {value: window.innerWidth },
         curvatureStrength: { value: params.curvatureStrength },
@@ -204,8 +199,7 @@ const shaderMaterial = new THREE.ShaderMaterial({
         uniform float frequency;
         uniform float angle;
         uniform float convexity;
-        uniform float groundFriction;
-        uniform float frothStrength;
+        uniform float frothiness;
         uniform float frothScale; 
         uniform float curvatureStrength;
         uniform float curvatureScale;
@@ -231,7 +225,7 @@ const shaderMaterial = new THREE.ShaderMaterial({
             )); 
             
             // Add the noise to the x coordinate
-            adjustedX += frothStrength * frothNoiseValue;
+            adjustedX += frothiness * frothNoiseValue;
             
             float x = mod(adjustedX * frequency - time * speed, 2.0 * pi) / (2.0 * pi);
             
