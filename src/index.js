@@ -18,6 +18,9 @@ const GUIConfiguration = {
     },
     waveGeometry: {
         convexity: { min: 0, max: 1, default: .5 },
+    },
+    environment: {
+        groundFriction: { min: 0, max: 1, default: .5 },
     }
 };
 
@@ -92,7 +95,9 @@ guiCreator.setCallback('waveWidth', (value) => {
 guiCreator.setCallback('convexity', (value) => {
     shaderMaterial.uniforms.convexity.value = value;
 });
-
+guiCreator.setCallback('groundFriction', (value) => {
+    shaderMaterial.uniforms.groundFriction.value = value;
+});
 
 function createAndUpdateGrid(value) {
     geometry.setAttribute('position', createGrid());
@@ -138,6 +143,7 @@ const shaderMaterial = new THREE.ShaderMaterial({
         frequency: { value: params.frequency },
         angle: { value: THREE.MathUtils.degToRad(params.angle) },
         convexity: { value: params.convexity },
+        groundFriction: { value: params.groundFriction },
     },
     vertexShader: `
         uniform float time;
@@ -147,6 +153,7 @@ const shaderMaterial = new THREE.ShaderMaterial({
         uniform float frequency;
         uniform float angle;
         uniform float convexity;
+        uniform float groundFriction;
     
         void main() {
             vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
