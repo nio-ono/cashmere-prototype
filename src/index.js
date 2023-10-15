@@ -10,7 +10,7 @@ const GUIConfiguration = {
         spacing: { min: 0.5, max: 5, default: 2 },
         minSize: { min: 0, max: 2, default: 1 },
         maxSize: { min: 0.1, max: 20, default: 7 },
-        color: { default: "#999999"},
+        color: { default: "#93908b"},
     },
     waveMovement: {
         speed: { min: 0, max: 4, default: 1 },
