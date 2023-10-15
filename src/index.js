@@ -12,18 +12,18 @@ const GUIConfiguration = {
         maxDotSize: { min: 0.1, max: 20, default: 5 }
     },
     waveMovement: {
-        speed: { min: 0, max: 10, default: 1 },
-        frequency: { min: 0, max: 1, default: .06 },
-        angle: { min: 0, max: 360, default: 200 },
+        speed: { min: 0, max: 2, default: .5 },
+        frequency: { min: 0, max: .5, default: .02 },
+        angle: { min: 0, max: 360, default: 45 },
     },
     waveGeometry: {
         convexity: { min: 0, max: 1, default: .5 },
     },
     environment: {
         groundFriction: { min: 0, max: 1, default: .5 },
-        frothStrength: { min: 0, max: 20, default: 4 },
+        frothStrength: { min: 0, max: 20, default: 0 },
         curvatureStrength: { min: 0, max: 50, default: 15 },
-        curvatureScale: { min: 1.0, max: 200.0, default: 80.0 },
+        curvatureScale: { min: 1.0, max: 200.0, default: 160.0 },
     }
 };
 
