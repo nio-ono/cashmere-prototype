@@ -13,9 +13,9 @@ const GUIConfiguration = {
         background: { default: "#000000"}
     },
     dots: {
-        spacing: { min: 0.5, max: 5, default: 2 },
+        spacing: { min: 0.5, max: 5, default: 1.5 },
         minSize: { min: 0, max: 2, default: 1 },
-        maxSize: { min: 0.1, max: 20, default: 7 },
+        maxSize: { min: 0.1, max: 20, default: 5 },
     },
     waveMovement: {
         speed: { min: 0, max: 4, default: .5 },
