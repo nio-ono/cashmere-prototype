@@ -9,8 +9,8 @@ const GUIConfiguration = {
         cameraZ: { min: 10, max: 200, default: 100 }
     },
     color: {
-        foreground: { default: "rgb(147, 144, 139)"},
-        background: { default: "rgb(0,0,0)"}
+        foreground: { default: "#5C5852"},
+        background: { default: "#000000"}
     },
     dots: {
         spacing: { min: 0.5, max: 5, default: 2 },
