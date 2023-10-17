@@ -6,7 +6,7 @@ const showControlsByDefault = true;
 // GUI Configuration
 const GUIConfiguration = {
     camera: {
-        cameraZ: { min: 10, max: 200, default: 150 }
+        cameraZ: { min: 10, max: 200, default: 100 }
     },
     color: {
         foreground: { default: "rgb(147, 144, 139)"},
@@ -18,7 +18,7 @@ const GUIConfiguration = {
         maxSize: { min: 0.1, max: 20, default: 7 },
     },
     waveMovement: {
-        speed: { min: 0, max: 4, default: 1 },
+        speed: { min: 0, max: 4, default: .5 },
         frequency: { min: 0, max: .25, default: .03 },
         angle: { min: 0, max: 360, default: 30 },
     },
@@ -26,10 +26,10 @@ const GUIConfiguration = {
         convexity: { min: 0, max: 1, default: 0.5 },
     },
     chaos: {
-        frothiness: { min: 0, max: 30, default: 0 },
-        curvatureStrength: { min: 0, max: 500, default: 50 },
-        curvatureScale: { min: 20.0, max: 1000.0, default: 300.0 },
-        timeModulation: { min: 0, max: 100, default: 15 }
+        frothiness: { min: 0, max: 30, default: 4 },
+        curvatureStrength: { min: 0, max: 500, default: 180 },
+        curvatureScale: { min: 20.0, max: 1000.0, default: 400.0 },
+        timeModulation: { min: 0, max: 100, default: 80 }
     }
 };
 
